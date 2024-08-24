@@ -1,0 +1,8 @@
+# Estä node_modules-hakemiston seuranta
+node_modules/
+
+# Estä .env-tiedoston seuranta
+.env
+
+# Estä omaope-vision.json -tiedoston seuranta
+omaope-vision.json
