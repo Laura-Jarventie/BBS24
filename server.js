@@ -62,6 +62,7 @@ app.post('/upload-Images', upload.array('images', 10), async (req, res) => {
     { role: 'user', content: 'Luo yksi yksinkertainen ja selkeä koetehtävä ja sen vastaus yllä olevasta tekstistä suomeksi. Kysy vain yksi asia kerrallaan.' }
   ]); */
   console.log(context);
+  
    const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -78,7 +79,7 @@ app.post('/upload-Images', upload.array('images', 10), async (req, res) => {
 
     });
 
-    //vastaanota ja käsittele api vastaus json:ksi
+    //vastaanota api ja muuta se json:ksi
     const data = await response.json();
     console.log(data.choices[0].message);
     console.log('API response:', JSON.stringify(data));
