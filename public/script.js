@@ -4,10 +4,17 @@ let correctAnswer = ''; // Muuttuja oikean vastauksen tallentamiseen
 
 document.getElementById('send-button').addEventListener('click', sendMessage);
 document.getElementById('send-images-button').addEventListener('click', sendImages);
+document.getElementById('send-answer-button').addEventListener('click', sendAnswer);
 
 document.getElementById('user-input').addEventListener('keypress', function (e) {
     if (e.key === 'Enter') {
       sendMessage();
+    }
+  });
+
+  document.getElementById('answer-input').addEventListener('keypress', function (e) {
+    if (e.key === 'Enter') {
+      sendAnswer();
     }
   });
 
@@ -89,6 +96,78 @@ async function sendMessage(){
    document.getElementById('user-input').value = '';
 
 }
+
+async function sendAnswer(){
+  const answerInput = document.getElementById('answer-input').value;
+  if (answerInput.trim() === '') return;
+  console.log(answerInput);
+
+  addMessageToChatbox('Sinä:' + answerInput, 'user-message', 'omaopebox')
+
+   try {
+  //lähetetään vastaus serverille   
+  const response = await fetch('/check-answer', {
+      method: 'POST',
+      headers: {
+          'Content-Type': 'application/json'
+                  },
+      body: JSON.stringify({ user_answer: answerInput, correct_answer: correctAnswer })    
+  });
+ 
+  //lueataan serverin vastaus
+ // console.log(response);
+  const data = await response.json();
+  console.log(data.evaluation); 
+
+  addMessageToChatbox('Oma Ope:'+ data.evaluation, 'bot-message', 'omaopebox');  
+  fetchNextQuestion();
+
+ } catch(error) {
+    console.error('Error:', error);
+    addMessageToChatbox('ChatGPT: Jotain meni pieleen. Yritä uudelleen myöhemmin.', 'bot-message', 'omaopebox'); 
+}; 
+
+ document.getElementById('answer-input').value = '';
+
+}
+
+async function fetchNextQuestion() {
+  
+  try {
+
+    const response = await fetch('/next-question', {
+      method: 'POST',
+      headers: {
+          'Content-Type': 'application/json'
+      },
+      
+  });
+
+  const data = await response.json();
+      currentQuestion = data.question;
+      correctAnswer = data.answer;
+      console.log(currentQuestion);
+      console.log(correctAnswer);
+      addMessageToChatbox('OmaOpe: ' + data.question, 'bot-message', 'omaopebox');
+
+} catch(error) {
+  console.error('Error:', error);
+  addMessageToChatbox('ChatGPT: Jotain meni pieleen. Yritä uudelleen myöhemmin.', 'bot-message', 'omaopebox'); 
+}; 
+};
+
+  /* .then(response => response.json())
+  .then(data => {
+      if (data.error) {
+          addMessageToChatbox('Error: ' + data.error, 'bot-message');
+      } else {
+          currentQuestion = data.question;
+          correctAnswer = data.answer;
+          addMessageToChatbox('OmaOpe: ' + data.question, 'bot-message');
+      } 
+  })
+  
+}*/
 
 
 

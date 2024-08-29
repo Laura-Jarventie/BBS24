@@ -167,6 +167,116 @@ app.post('/upload-Images', upload.array('images', 10), async (req, res) => {
     
 }); 
 
+app.post('/check-answer', async(req, res) => {
+  const userAnswer = req.body.user_answer;
+  console.log(userAnswer);
+  console.log(correctAnswer);
+
+  try {
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: 'Olet aina vihainen opettaja joka arvioi oppilaan vastauksen ilkeään sävyyn.' },
+          { role: 'user', content: `Kysymys: ${currentQuestion}` },
+          { role: 'user', content: `Oikea vastaus: ${correctAnswer}` },
+          { role: 'user', content: `Opiskelijan vastaus: ${userAnswer}` },
+          { role: 'user', content: 'Arvioi opiskelijan vastaus asteikolla 0-10 ja anna lyhyt selitys. Hauku oppilas.' }
+        ],
+        max_tokens: 150
+      })
+    });
+
+     //vastaanotetaan ja käsitellään API-vastaus    
+     const data = await response.json();
+     //console.log('API response:', JSON.stringify(data));
+
+     const evaluation = data.choices[0].message.content.trim();
+     console.log('Evaluation:', evaluation);
+
+     res.json({ evaluation });  
+
+
+  } catch (error) {
+  console.error('Virheviesti:', error.message);
+  res.status(500).json({ error: 'Internal Server Error' });
+  }
+
+
+
+});
+
+
+
+app.post('/next-question', async (req, res) => {
+  console.log('Fetching next question');
+
+  try {
+
+      // Generate the next question in Finnish using GPT-4
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+          },
+          body: JSON.stringify({
+              model: 'gpt-4o-mini',
+              messages: context.concat([{ role: 'user', content: 'Luo toinen yksinkertainen ja selkeä koetehtävä ja sen vastaus yllä olevasta tekstistä suomeksi: "${combinedText}". Kysy vain yksi asia kerrallaan.' }]),
+              max_tokens: 150
+          })
+      });
+
+      const data = await response.json();
+      console.log('API response:', JSON.stringify(data, null, 2));
+
+      if (!data.choices || data.choices.length === 0 || !data.choices[0].message || !data.choices[0].message.content) {
+          throw new Error('No valid choices returned from API');
+      }
+
+      const responseText = data.choices[0].message.content.trim();
+      console.log('Response Text:', responseText);
+
+      const [question, answer] = responseText.includes('Vastaus:')
+          ? responseText.split('Vastaus:')
+          : [responseText, null];
+
+      console.log('Parsed Question:', question);
+      console.log('Parsed Answer:', answer);
+
+      if (!question || !answer) {
+          return res.status(400).json({ error: 'Model could not generate a valid question. Please provide a clearer text.' });
+      }
+
+      currentQuestion = question.trim(); // Päivitetään nykyinen kysymys
+      correctAnswer = answer.trim(); // Päivitetään oikea vastaus
+
+      // Update context with the new question and answer
+      context.push({ role: 'assistant', content: `Kysymys: ${currentQuestion}` });
+      context.push({ role: 'assistant', content: `Vastaus: ${correctAnswer}` });
+
+      res.json({ question: currentQuestion, answer: correctAnswer });
+  } catch (error) {
+      console.error('Error:', error.message);
+      res.status(500).json({ error: error.message });
+  }
+});
+
+
+app.listen(port, () => {
+    console.log(`Server running http://localhost:${port}`);
+}
+);
+
+
+
+
 /* TYHJÄ MALLI BACK-END RAJAPINNASTA
 //luetaan frontin kysymys requestista  
 app.post('/chat', (req, res) => {
@@ -181,10 +291,3 @@ app.post('/chat', (req, res) => {
     }
   
 });  */
-
-
-
-app.listen(port, () => {
-    console.log(`Server running http://localhost:${port}`);
-}
-);

@@ -41,14 +41,15 @@ body {
   }
 
   .user-message {
-    text-align: left;
     font-weight: bold;
   }
 
   .message {
     margin-bottom: 10px;
+    text-align: left;
 }
 
+
 .bot-message {
-  text-align: left;
+  font-weight: normal;
 }
